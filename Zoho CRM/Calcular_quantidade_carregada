@@ -1,0 +1,66 @@
+//
+// Função na qual realiza a gestão de saldo do cliente com base em seu pedido principal de sua carteira, faz o calculo
+// de acordo com que os carregamentos são realizados. 
+//
+delivery = zoho.crm.getRecordById("Gest_o_de_Carregamentos",deliveryID);
+salesOrder = invokeurl
+[
+	url :"https://www.zohoapis.com/crm/v6/Sales_Orders/" + delivery.get("Pedido").get("id")
+	type :GET
+	connection:"zohocrm"
+];
+salesOrder = salesOrder.get("data").get(0);
+//
+returnedQTD = delivery.get("Quantidade_Toneladas") - delivery.get("Quantidade_Carregada");
+for each  item in salesOrder.get("Ordered_Items")
+{
+	item.put("Total_de_Quantidade_Carregada",item.get("Total_de_Quantidade_Carregada") - returnedQTD);
+	item.put("quantidadeRestante",item.get("quantidadeRestante") + returnedQTD);
+	if(item.get("quantidadeRestante") == 0)
+	{
+		salesOrder.put("Status","Pedido Concluído");
+	}
+	else
+	{
+		salesOrder.put("Status","Pedido em Andamento");
+	}
+}
+salesOrderUpdate = invokeurl
+[
+	url :"https://www.zohoapis.com/crm/v6/Sales_Orders/" + delivery.get("Pedido").get("id")
+	type :PUT
+	parameters:toString({"data":{salesOrder}})
+	connection:"zohocrm"
+];
+info salesOrderUpdate;
+if(salesOrder.get("Pedido_Filho") == true)
+{
+	mainOrder = invokeurl
+	[
+		url :"https://www.zohoapis.com/crm/v6/Sales_Orders/" + salesOrder.get("Pedido_Principal").get("id")
+		type :GET
+		connection:"zohocrm"
+	];
+	mainOrder = mainOrder.get("data").get(0);
+	for each  item in mainOrder.get("Ordered_Items")
+	{
+		item.put("Total_de_Quantidade_Carregada",item.get("Total_de_Quantidade_Carregada") - returnedQTD);
+		item.put("quantidadeRestante",item.get("quantidadeRestante") + returnedQTD);
+		if(item.get("quantidadeRestante") == 0)
+		{
+			mainOrder.put("Status","Pedido Concluído");
+		}
+		else
+		{
+			mainOrder.put("Status","Pedido em Andamento");
+		}
+	}
+	mainOrderUpdate = invokeurl
+	[
+		url :"https://www.zohoapis.com/crm/v6/Sales_Orders/" + mainOrder.get("Pedido").get("id")
+		type :PUT
+		parameters:toString({"data":{mainOrder}})
+		connection:"zohocrm"
+	];
+	info mainOrderUpdate;
+}

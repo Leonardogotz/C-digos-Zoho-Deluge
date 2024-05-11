@@ -1,0 +1,45 @@
+// Função para realizar a busca do PTAX do dia AuthenticatorAssertionResponse, direto na api do banco central(quando a 
+//  data da busca for segunda-feira, fará a busca do PTAX de sexta-feira)
+
+previousDate = zoho.currentdate.toString("MM-dd-yyyy");
+dateDay = previousDate.getDayOfWeek();
+if(dateDay == 2)
+{
+	previousDate = previousDate.subDay(3);
+}
+else if(dateDay == 1)
+{
+	previousDate = previousDate.subDay(2);
+}
+price = invokeurl
+[
+	url :"https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarDia(dataCotacao=@dataCotacao)?%40dataCotacao='" + previousDate + "'&%24top=100&%24format=json&%24select=cotacaoCompra,cotacaoVenda"
+	type :GET
+];
+try 
+{
+	currencyToday = price.get("value").get(0).get("cotacaoVenda");
+	info "Preço Hoje: " + currencyToday;
+	currencies = List();
+	formatMap = Map();
+	currencyMap = Map();
+	currencyMap.put("prefix_symbol",true);
+	currencyMap.put("symbol","R$");
+	currencyMap.put("exchange_rate",currencyToday.toString());
+	currencyMap.put("id","5548126000001126062");
+	currencies.add(currencyMap);
+	mapping = Map();
+	mapping.put("currencies",currencies);
+	response = invokeurl
+	[
+		url :"https://www.zohoapis.com/crm/v2.1/org/currencies/5548126000001126062"
+		type :PUT
+		parameters:mapping.toString()
+		connection:"currencycrm"
+	];
+	info response;
+}
+catch (err)
+{
+	info "Não Houve mudança na cotação!";
+}

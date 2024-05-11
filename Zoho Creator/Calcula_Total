@@ -1,0 +1,116 @@
+// Função que realiza o calculo dos dados inseridos no formulario de produto, para calcular o valor total do produto no orçamento,
+// levando em consideração o frete, o valor de ICMS e a moeda utilizada no orçamento.
+
+totalGeral = 0.0;
+precificacao = zoho.crm.getRecordById("Precifica_es",5548126000002873808);
+valorBaseEmbalagem = precificacao.get("Valor_Embalagem");
+if(input.Moeda == "BRL")
+{
+	for each  produtoLista in input.Itens_Cotados
+	{
+		if(produtoLista != null)
+		{
+			quantidade = produtoLista.Quantidade;
+			produto = produtoLista.Nome_Produto;
+			preco = produtoLista.Preco_Unitario;
+			imposto = produtoLista.ICMS;
+			embalagem = produtoLista.Embalagem;
+			valorEmbalagem = produtoLista.Valor_Embalagem;
+			if(quantidade == null)
+			{
+				quantidade = 0;
+			}
+			if(embalagem == "BIG BAG" && embalagem != null)
+			{
+				valorEmbalagem = valorBaseEmbalagem * quantidade;
+			}
+			else if(embalagem == "SACARIA" && embalagem != null)
+			{
+				sacarias = quantidade / 0.05;
+				sacarias = ceil(sacarias);
+				valorEmbalagem = valorBaseEmbalagem * sacarias;
+			}
+			else if(embalagem == "GRANEL" && embalagem != null)
+			{
+				valorEmbalagem = 0;
+			}
+			produtoLista.Valor_Embalagem=valorEmbalagem;
+			if(quantidade != null)
+			{
+				totalProduto = preco * (1 + imposto / 100);
+				valorSemEmbalagem = totalProduto * quantidade;
+				produtoLista.Total=valorSemEmbalagem + valorEmbalagem;
+				totalGeral = (totalGeral + produtoLista.Total) * input.Valor_do_PTAX;
+			}
+			else
+			{
+				produtoLista.Embalagem=null;
+				alert "Defina o produto antes de informar a embalagem!";
+			}
+		}
+	}
+	if(input.Frete == null)
+	{
+		frete = 0;
+	}
+	else
+	{
+		frete = input.Frete;
+	}
+	input.Total_Geral = totalGeral;
+}
+else if(input.Moeda == "USD")
+{
+	for each  produtoLista in input.Itens_Cotados
+	{
+		if(produtoLista != null)
+		{
+			quantidade = produtoLista.Quantidade;
+			produto = produtoLista.Nome_Produto;
+			preco = produtoLista.Preco_Unitario;
+			imposto = produtoLista.ICMS;
+			embalagem = produtoLista.Embalagem;
+			valorEmbalagem = produtoLista.Valor_Embalagem;
+			if(quantidade == null)
+			{
+				quantidade = 0;
+			}
+			if(embalagem == "BIG BAG" && embalagem != null)
+			{
+				valorEmbalagem = valorBaseEmbalagem * quantidade;
+			}
+			else if(embalagem == "SACARIA" && embalagem != null)
+			{
+				sacarias = quantidade / 0.05;
+				sacarias = ceil(sacarias);
+				valorEmbalagem = valorBaseEmbalagem * sacarias;
+			}
+			else if(embalagem == "GRANEL" && embalagem != null)
+			{
+				valorEmbalagem = 0;
+			}
+			produtoLista.Valor_Embalagem=valorEmbalagem;
+			if(quantidade != null)
+			{
+				totalProduto = preco * (1 + imposto / 100);
+				valorSemEmbalagem = totalProduto * quantidade;
+				produtoLista.Total=valorSemEmbalagem + valorEmbalagem;
+				totalGeral = totalGeral + produtoLista.Total;
+			}
+			else
+			{
+				produtoLista.Embalagem=null;
+				alert "Defina o produto antes de informar a embalagem!";
+			}
+		}
+	}
+	if(input.Frete == null)
+	{
+		frete = 0;
+	}
+	else
+	{
+		frete = input.Frete;
+	}
+	input.Total_Geral = totalGeral;
+}

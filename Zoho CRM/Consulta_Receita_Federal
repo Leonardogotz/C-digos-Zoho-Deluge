@@ -1,0 +1,85 @@
+// Chamada API, no qual consulta as informações da receita federal de acordo com o CNPJ 
+// utilizado no cadastro de uma Conta ou Fornecedor no CRM
+
+mapaRetorno = Map();
+newCnpj = newCnpj.replaceAll("[/\-\(\)_@#\^!\$%\&\*:;`~.,]","");
+data = Map();
+data.put("cnpj",newCnpj);
+data.put("id",id);
+data.put("module",module);
+receitaFederal = invokeurl
+[
+	url :"http://142.93.120.214:4001/api/ConsultCnpj"
+	type :POST
+	parameters:data
+	headers:{"Authorization":"annblijxu3","Content-Type":"application/json"}
+];
+// info data;
+info receitaFederal;
+if(receitaFederal.contains("ERROR") || receitaFederal.contains("error"))
+{
+	mapaRetorno.put("error",receitaFederal.get("error"));
+}
+else
+{
+	socios = receitaFederal.get("qsa");
+	atividades = receitaFederal.get("atividade_principal");
+	atividadesSecundarias = receitaFederal.get("atividades_secundarias");
+	listaSocios = List();
+	listaAtividade = list();
+	listaAtividadeSecundaria = List();
+	for each  atividade in atividades
+	{
+		descricao = atividade.get("text");
+		codigo = atividade.get("code");
+		descAtividade = "Atividade: " + descricao + " Código: " + codigo;
+		listaAtividade.add(descAtividade);
+	}
+	for each  socio in socios
+	{
+		qualificacao = socio.get("qual");
+		nome = socio.get("nome");
+		socioformatado = qualificacao + " " + nome;
+		listaSocios.add(socioformatado);
+	}
+	for each  atividadeSecundaria in atividadesSecundarias
+	{
+		descricao = atividade.get("text");
+		codigo = atividade.get("code");
+		descAtividade = "Atividade: " + descricao + " Código: " + codigo;
+		listaAtividadeSecundaria.add(descAtividade);
+	}
+	info receitaFederal;
+	mapaRetorno.put("Status",receitaFederal.get("status"));
+	mapaRetorno.put("UF",receitaFederal.get("uf"));
+	mapaRetorno.put("City",receitaFederal.get("municipio"));
+	mapaRetorno.put("Street",receitaFederal.get("logradouro"));
+	mapaRetorno.put("Zip_Code",receitaFederal.get("cep"));
+	mapaRetorno.put("cnpjbr_Capital_Social",receitaFederal.get("capital_social"));
+	mapaRetorno.put("cnpjbr_Natureza_Jur_dica",receitaFederal.get("natureza_juridica"));
+	info "Broken 1";
+	info receitaFederal;
+	mapaRetorno.put("cnpjbr_Data_de_Abertura",receitaFederal.get("abertura").replaceAll("/","-"));
+	info "Broken 2";
+	mapaRetorno.put("cnpjbr_Situa_o_Cadastral",receitaFederal.get("situacao"));
+	mapaRetorno.put("cnpjbr_Tipo",receitaFederal.get("tipo"));
+	mapaRetorno.put("cnpjbr_Data_da_Situa_o",receitaFederal.get("data_situacao").replaceAll("/","-"));
+	mapaRetorno.put("cnpjbr_Nome_Fantasia",receitaFederal.get("fantasia"));
+	mapaRetorno.put("cnpjbr_Bairro",receitaFederal.get("bairro"));
+	mapaRetorno.put("cnpjbr_N_mero",receitaFederal.get("numero"));
+	mapaRetorno.put("cnpjbr_Raz_o_Social",receitaFederal.get("nome"));
+	mapaRetorno.put("cnpjbr_Email",receitaFederal.get("email"));
+	mapaRetorno.put("cnpjbr_Porte",receitaFederal.get("porte"));
+	mapaRetorno.put("cnpjbr_Complemento",receitaFederal.get("complemento"));
+	mapaRetorno.put("cnpjbr_Motivo_da_Situa_o",receitaFederal.get("motivo_situacao"));
+	mapaRetorno.put("cnpjbr_Situa_o_Especial",receitaFederal.get("situacao_especial"));
+	mapaRetorno.put("cnpjbr_Data_da_Situa_o_Especial",receitaFederal.get("data_situacao_especial"));
+	mapaRetorno.put("cnpjbr_Cnae_Principal_Code",receitaFederal.get("cnae_principal_code"));
+	mapaRetorno.put("cnpjbr_Cnae_Secondary_Code",receitaFederal.get("cnae_secondary_code"));
+	mapaRetorno.put("cnpjbr_Status",receitaFederal.get("status"));
+	mapaRetorno.put("cnpjbr_Atividade_Principal",listaAtividade.toString(", "));
+	mapaRetorno.put("cnpjbr_S_cios",listaSocios.toString(", "));
+	mapaRetorno.put("cnpjbr_Atividades_Secund_rias",listaAtividadeSecundaria.toString(", "));
+	mapaRetorno.put("Telefone",receitaFederal.get("telefone"));
+}
+return mapaRetorno;

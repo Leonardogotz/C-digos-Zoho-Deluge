@@ -1,0 +1,63 @@
+-- Criação de um ordem de venda no software Zoho Books, com base na forma de 
+-- PTAX escolhido(caso seja PTAX do dia anterior, consome nosso retorno de uma chamada api feita por agendamento, 
+-- que busca todo dia o ptax do dia anterior no site do banco central.)
+
+///
+pedido = zoho.crm.getRecordById("Sales_Orders",pedidoID);
+//info pedido;
+org_id = "795952927";
+valorEmbalagem = zoho.crm.getRecords("Precifica_es").get(0).get("Valor_Embalagem");
+// info pedido;
+for each  product in pedido.get("Product_Details")
+{
+	if(pedido.get("Currency") == "USD")
+	{
+		// Obtém a taxa de câmbio da moeda de origem para a moeda de destino
+		taxa_cambio = invokeurl
+		[
+			url :"https://www.zohoapis.com/crm/v5/org/currencies/5548126000001126062"
+			type :GET
+			connection:"currencycrm"
+		];
+		taxa_cambio = taxa_cambio.get("currencies").get(0).get("exchange_rate");
+		numero1 = round(taxa_cambio,2);
+		// Converte o valor do pedido para reais
+		somaEmbalagem = product.get("list_price") + valorEmbalagem;
+		valor_em_reais = somaEmbalagem * numero1;
+		valorUnitario = round(valor_em_reais,2);
+	}
+	else
+	{
+		taxa_cambio = invokeurl
+		[
+			url :"https://www.zohoapis.com/crm/v5/org/currencies/5548126000001126062"
+			type :GET
+			connection:"currencycrm"
+		];
+		taxa_cambio = taxa_cambio.get("currencies").get(0).get("exchange_rate");
+		numero1 = round(taxa_cambio,2);
+		embalagemReais = valorEmbalagem * numero1;
+		embalagemReais = round(embalagemReais,2);
+		valorUnitario = product.get("list_price") + embalagemReais;
+	}
+}
+account_name = pedido.get("Account_Name").get("name");
+account_id = pedido.get("Account_Name").get("id");
+account = zoho.crm.getRecordById("Accounts",account_id);
+razao = account.get("Account_Name");
+CNPJ = account.get("CNPJ");
+items = pedido.get("Product_Details");
+customer = zoho.books.getRecords("contacts",org_id,{"contact_name":account_name},"zoho_books").get("contacts");
+customer_with_id = zoho.books.getRecordsByID("contacts",org_id,customer.get(0).get("contact_id"),"zoho_books");
+customer_id = customer.get(0).get("contact_id");
+line_items = {};
+for each  item in items
+{
+	item_books = zoho.books.getRecords("items",org_id,{"name":item.get("product").get("name")},"zoho_books").get("items").get(0);
+	it = {"item_id":item_books.get("item_id"),"name":item_books.get("name"),"quantity":item.get("quantity"),"rate":valorUnitario};
+	line_items.insert(it);
+}
+arg = {"customer_id":customer_id,"status":"open","customer_name":razao,"date":today.toString("yyyy-MM-dd"),"line_items":line_items};
+//info arg;
+res = zoho.books.createRecord("salesorders",org_id,arg,"zoho_books");
+//info res;

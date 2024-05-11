@@ -1,0 +1,137 @@
+// Função criada para gerar o orçamento no CRM, de acordo com as informações passadas na aplicação do Zoho Creator,
+// mapeando todos os campos.
+ownerMap = Map();
+usuarios = invokeurl
+[
+	url :"https://www.zohoapis.com/crm/v2.1/users"
+	type :GET
+	connection:"crmall"
+];
+for each  usuario in usuarios.get("users")
+{
+	if(zoho.loginuserid == usuario.get("email"))
+	{
+		ownerMap.put("id",usuario.get("id"));
+	}
+}
+createMap = Map();
+createMap.put("Owner",ownerMap);
+createMap.put("Currency",input.Moeda);
+createMap.put("Filial_de_faturamento",input.Filial);
+createMap.put("Billing_Street",input.Logradouro);
+createMap.put("Billing_Code",input.CEP);
+createMap.put("Desmembramento",input.Desmembr_vel);
+createMap.put("PTAX",input.PTAX);
+createMap.put("Taxa_PTAX",input.Valor_do_PTAX);
+createMap.put("Shipping_Code",input.CEP_de_Entrega);
+// createMap.put("Bairro",input.Bairro);
+createMap.put("Shipping_City",input.Cidade_de_Entrega);
+createMap.put("Billing_City",input.Cidade);
+createMap.put("Shipping_Street",input.Logradouro_de_Entrega);
+createMap.put("Complemento_de_Entrega",input.Complemento_de_Entrega);
+createMap.put("Shipping_State",input.UF_de_Entrega);
+createMap.put("Condi_o_de_Pagamento",input.Condicao_de_Pagamento);
+createMap.put("Complemento",input.Complemento);
+createMap.put("Subject","Orçamento Autem Trade Company");
+createMap.put("Tipo_de_Frete",input.Tipo_de_Frete);
+createMap.put("Billing_State",input.UF);
+createMap.put("Pagamento_Personalizado",input.Pagamento_Personalizado);
+// createMap.put("Bairro_de_Entrega",input.Bairro_de_Entrega);
+if(input.Data_do_PTAX != null)
+{
+	dia = input.Data_do_PTAX.getDay();
+	mes = input.Data_do_PTAX.getMonth();
+	ano = input.Data_do_PTAX.getYear();
+	if(dia.toText().len() < 2)
+	{
+		dia = "0" + dia.toText();
+	}
+	if(mes.toText().len() < 2)
+	{
+		mes = "0" + mes.toText();
+	}
+	ano = input.Data_de_Vencimento.getYear();
+	dataPtax = ano + "-" + mes + "-" + dia;
+	createMap.put("Data_do_PTAX",dataPtax);
+}
+if(input.Data_de_Retirada != null)
+{
+	dia = input.Data_de_Retirada.getDay();
+	mes = input.Data_de_Retirada.getMonth();
+	ano = input.Data_de_Retirada.getYear();
+	if(dia.toText().len() < 2)
+	{
+		dia = "0" + dia.toText();
+	}
+	if(mes.toText().len() < 2)
+	{
+		mes = "0" + mes.toText();
+	}
+	ano = input.Data_de_Vencimento.getYear();
+	dataEntrega = ano + "-" + mes + "-" + dia;
+	createMap.put("Data_Entrega",dataEntrega);
+}
+if(input.Data_de_Vencimento != null)
+{
+	dia = input.Data_de_Vencimento.getDay();
+	mes = input.Data_de_Vencimento.getMonth();
+	ano = input.Data_de_Vencimento.getYear();
+	if(dia.toText().len() < 2)
+	{
+		dia = "0" + dia.toText();
+	}
+	if(mes.toText().len() < 2)
+	{
+		mes = "0" + mes.toText();
+	}
+	ano = input.Data_de_Vencimento.getYear();
+	dataVencimento = ano + "-" + mes + "-" + dia;
+	createMap.put("Data_Fechamento",dataVencimento);
+}
+createMap.put("Status_de_Aprova_o","Em Ánalise");
+createMap.put("Frete",input.Frete);
+contatoMap = Map();
+contatoMap.put("id",input.Nome_Contato);
+createMap.put("Contact_Name",contatoMap);
+//Informação da CONTA > campo cnpj/cpf do cliente
+contaMap = Map();
+contaMap.put("id",input.ID_Conta);
+createMap.put("Account_Name",contaMap);
+listaProdutos = list();
+for each  produto in input.Itens_Cotados
+{
+	produtoMap = Map();
+	idProduto = Map();
+	idProduto.put("id",produto.Nome_Produto);
+	produtoMap.put("Product_Name",idProduto);
+	produtoMap.put("Descri_o",produto.Descricao_Produto);
+	produtoMap.put("Quantity",produto.Quantidade);
+	produtoMap.put("Embalagem",produto.Embalagem);
+	produtoMap.put("List_Price",produto.Preco_Unitario);
+	produtoMap.put("ICMS",produto.ICMS.toText());
+	produtoMap.put("Total_do_Produto",produto.Total);
+	listaProdutos.add(produtoMap);
+}
+createMap.put("Quoted_Items",listaProdutos);
+createMap.put("ICMS_Geral",input.ICMS_Geral.toString());
+valorAtualizado = Map();
+valorAtualizado.put("data",{createMap});
+criar = invokeurl
+[
+	url :"https://www.zohoapis.com/crm/v2.1/Quotes"
+	type :POST
+	parameters:valorAtualizado + ""
+	connection:"crmall"
+];
+if(criar.get("data").get(0).get("status") == "success")
+{
+	delay = invokeurl
+	[
+		url :"https://postman-echo.com/delay/0"
+		type :GET
+	];
+	orcamentoCRM = zoho.crm.getRecordById("Quotes",criar.get("data").get(0).get("details").get("id").toNumber());
+	link = "<a href='https://crm.zoho.com/crm/autem/tab/Quotes/" + criar.get("data").get(0).get("details").get("id") + "' title='Click para acessar o registro' target='_blank'>" + orcamentoCRM.get("Subject") + "</a>";
+	input.Link_CRM = link;
+	openUrl("https://crm.zoho.com/crm/tab/Quotes/" + link,"parent window");
+}

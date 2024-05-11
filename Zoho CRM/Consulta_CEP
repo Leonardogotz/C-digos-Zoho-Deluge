@@ -1,0 +1,28 @@
+// Chamada API, que faz uma consulta em uma rota de nossa aplicação external, na qual essa realiza uma busca do CEP na ViaCEP,
+// poderiamos realizar a chamada diretamente na rota da ViaCep se necessario.
+
+try 
+{
+	response = invokeurl
+	[
+		url :"http://142.93.120.214:4001/api/cep/" + cep
+		type :POST
+	];
+}
+catch (err)
+{
+	info err;
+}
+info response;
+mapping = Map();
+mapping.put("cep",response.get("cep").replaceAll("[^0-9.,]+",""));
+mapping.put("logradouro",response.get("logradouro"));
+mapping.put("complemento",response.get("complemento"));
+mapping.put("bairro",response.get("bairro"));
+mapping.put("localidade",response.get("localidade"));
+mapping.put("uf",response.get("uf"));
+mapping.put("ibge",response.get("ibge"));
+mapping.put("gia",response.get("gia"));
+mapping.put("ddd",response.get("ddd"));
+mapping.put("siafi",response.get("siafi"));
+return mapping;
