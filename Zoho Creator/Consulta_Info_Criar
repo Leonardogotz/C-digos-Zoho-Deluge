@@ -1,0 +1,108 @@
+conta = zoho.crm.getRecordById("Accounts",input.ID_Conta.toNumber());
+// ontem = zoho.currentdate.subDay(1).toString("MM-dd-yyyy");
+currentDate = zoho.currentdate;
+previousDate = zoho.currentdate.subDay(1);
+//alert previousDate;
+dateDay = currentDate.getDayOfWeek();
+if(dateDay == 2)
+{
+	previousDate = previousDate.subDay(3);
+}
+else if(dateDay == 1)
+{
+	previousDate = previousDate.subDay(2);
+}
+// alert conta;
+price = invokeurl
+[
+	url :"https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarDia(dataCotacao=@dataCotacao)?%40dataCotacao='" + previousDate.toString("MM-dd-yyyy") + "'&%24top=100&%24format=json&%24select=cotacaoCompra,cotacaoVenda"
+	type :GET
+];
+//alert price;
+input.Valor_do_PTAX = price.get("value").get(0).get("cotacaoVenda");
+if(conta == {})
+{
+	//Mostrar campos de Nome do Contato e Razão Social/Nome
+	hide Itens_Cotados;
+	hide Nome_Contato;
+	hide razaoSocial;
+	//Atribuir Razão Social com base no CPF/CNPJ do cliente
+	input.razaoSocial = null;
+	input.CEP = null;
+	input.Logradouro = null;
+	input.Cidade = null;
+	// input.Bairro = null;
+	input.Complemento = null;
+	input.UF = null;
+	alert "Conta não encontrada no CRM!";
+}
+if(conta != {})
+{
+	//Mostrar campos de Nome do Contato e Razão Social/Nome
+	show Itens_Cotados;
+	show Nome_Contato;
+	show razaoSocial;
+	//Atribuir Razão Social com base no CPF/CNPJ do cliente
+	input.razaoSocial = conta.get("Account_Name");
+	input.ID_Conta = conta.get("id");
+	// 	input.Nome_Contato = 
+	if(conta.get("Billing_Code").toString() != null)
+	{
+		input.CEP = conta.get("Billing_Code").toString();
+	}
+	else
+	{
+		alert "A conta está sem CEP cadastrado!";
+	}
+	input.Logradouro = conta.get("Billing_Street");
+	//alert conta;
+	input.Cidade = conta.get("Billing_City");
+	// input.Bairro = conta.get("zPlugin_Bairro");
+	input.Complemento = conta.get("zPlugin_Complemento");
+	input.UF = conta.get("Billing_State");
+	//Precificação
+	precificacao = zoho.crm.getRecordById("Precifica_es",5548126000002873808);
+	for each  produtoFormulario in input.Itens_Cotados
+	{
+		if(produtoFormulario.Nome_Produto != null)
+		{
+			for each  porcentagemProduto in precificacao.get("Porcentagem_dos_Produtos")
+			{
+				// Escaneia lista de porcentagens e extrai porcentagem do cliente 
+				if(conta.get("Porte") == porcentagemProduto.get("Porte"))
+				{
+					if(conta.get("Tipo_da_Empresa") == "MISTURADORA/DISTRIBUIDORA")
+					{
+						porcentagem = porcentagemProduto.get("Distribuidora");
+					}
+					if(conta.get("Tipo_da_Empresa") == "REVENDA")
+					{
+						porcentagem = porcentagemProduto.get("Revenda");
+					}
+					if(conta.get("Tipo_da_Empresa") == "PRODUTOR RURAL")
+					{
+						porcentagem = porcentagemProduto.get("Produtor");
+					}
+					for each  produtoBase in precificacao.get("Tabela_de_Precifica_o")
+					{
+						if(produtoFormulario.Nome_Produto == produtoBase.get("Produto").get("id"))
+						{
+							valorBase = produtoBase.get("Valor_Base");
+							valorProduto = valorBase + valorBase * porcentagem / 100;
+							produtoFormulario.Preco_Unitario=valorProduto;
+						}
+					}
+					idProduto = toNumber(produtoFormulario.Nome_Produto);
+					produto = zoho.crm.getRecordById("Products",idProduto);
+					for each  imposto in produto.get("Imposto_de_ICMS")
+					{
+						if(imposto.get("UF") == conta.get("Billing_State") || imposto.get("UF") == input.UF || imposto.get("UF") == input.UF_de_Entrega)
+						{
+							produtoFormulario.ICMS=imposto.get("ICMS_BRL");
+						}
+					}
+				}
+			}
+		}
+	}
+}
