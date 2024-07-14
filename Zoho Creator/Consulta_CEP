@@ -1,0 +1,39 @@
+// Função que realiza uma busca em nossa chamada de API, configurada para uma rota da ViaCep, onde trazemos o endereço
+// quando o usuario insere o CEP.
+
+cep = input.CEP_de_Entrega;
+if(cep == "")
+{
+	input.Logradouro_de_Entrega = null;
+	input.Cidade_de_Entrega = null;
+	// input.Bairro_de_Entrega = null;
+	input.Complemento_de_Entrega = null;
+	input.UF_de_Entrega = null;
+}
+else
+{
+	cepFormatado = cep.replaceAll("[/\-\(\)_@#\^!\$%\&\*:;`~.,]","");
+	sucesso = true;
+	try 
+	{
+		consulta = invokeurl
+		[
+			url :"http://142.93.120.214:4001/api/cep/" + cepFormatado
+			type :POST
+		];
+	}
+	catch (erro)
+	{
+		sucesso = false;
+		return;
+	}
+	if(sucesso)
+	{
+		input.Logradouro_de_Entrega = consulta.get("logradouro").toUpperCase();
+		input.Cidade_de_Entrega = consulta.get("localidade").toUpperCase();
+		// input.Bairro_de_Entrega = consulta.get("bairro").toUpperCase();
+		input.Complemento_de_Entrega = consulta.get("complemento").toUpperCase();
+		input.UF_de_Entrega = consulta.get("uf").toUpperCase();
+		return;
+	}
+}
